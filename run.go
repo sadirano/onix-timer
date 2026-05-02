@@ -339,6 +339,27 @@ func runLS(onixHome, scope string, vis *Config, raw, watch bool) error {
 	return nil
 }
 
+func runClean(onixHome, scope string) error {
+	s, err := loadState(onixHome, scope)
+	if err != nil {
+		return err
+	}
+	before := len(s.Timers)
+	active := s.Timers[:0]
+	for _, e := range s.Timers {
+		if !e.Done {
+			active = append(active, e)
+		}
+	}
+	s.Timers = active
+	removed := before - len(s.Timers)
+	if err := saveState(onixHome, scope, s); err != nil {
+		return err
+	}
+	fmt.Printf("Removed %d done timer(s).\n", removed)
+	return nil
+}
+
 func runScopes(onixHome string) error {
 	files, _ := filepath.Glob(filepath.Join(timerDir(onixHome), "*.json"))
 	if len(files) == 0 {

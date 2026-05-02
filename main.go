@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const version = "0.1.0"
+
 func main() {
 	onixHome := strings.TrimSpace(os.Getenv("ONIX_HOME"))
 	vis := loadConfig(onixHome)
@@ -51,59 +53,48 @@ func main() {
 			fatal("%v", err)
 		}
 	case "stop":
-		scope, cleaned, hasContext := resolveScope(rest)
-		if !hasContext {
-			scope = promptScopeIfNeeded(onixHome, scope)
-		}
+		scope, cleaned, _ := resolveScope(rest)
 		if err := runStop(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "cancel", "rm", "delete":
-		scope, cleaned, hasContext := resolveScope(rest)
-		if !hasContext {
-			scope = promptScopeIfNeeded(onixHome, scope)
-		}
+		scope, cleaned, _ := resolveScope(rest)
 		if err := runCancel(cleaned, onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "reset":
-		scope, cleaned, hasContext := resolveScope(rest)
-		if !hasContext {
-			scope = promptScopeIfNeeded(onixHome, scope)
-		}
+		scope, cleaned, _ := resolveScope(rest)
 		if err := runReset(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "lap":
-		scope, cleaned, hasContext := resolveScope(rest)
-		if !hasContext {
-			scope = promptScopeIfNeeded(onixHome, scope)
-		}
+		scope, cleaned, _ := resolveScope(rest)
 		if err := runLap(cleaned, onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "status":
-		scope, _, hasContext := resolveScope(rest)
-		if !hasContext {
-			scope = promptScopeIfNeeded(onixHome, scope)
-		}
+		scope, _, _ := resolveScope(rest)
 		if err := runStatus(onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "ls", "list":
-		scope, cleaned, hasContext := resolveScope(rest)
-		if !hasContext {
-			scope = promptScopeIfNeeded(onixHome, scope)
-		}
+		scope, cleaned, _ := resolveScope(rest)
 		raw := hasFlag(cleaned, "--raw")
 		watch := hasFlag(cleaned, "--watch")
 		if err := runLS(onixHome, scope, &vis, raw, watch); err != nil {
+			fatal("%v", err)
+		}
+	case "clean":
+		scope, _, _ := resolveScope(rest)
+		if err := runClean(onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "scopes":
 		if err := runScopes(onixHome); err != nil {
 			fatal("%v", err)
 		}
+	case "version", "-v", "--version":
+		fmt.Printf("onix-timer %s\n", version)
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -224,7 +215,9 @@ USAGE
   timer lap <id|name>                    Record split on stopwatch
   timer ls [--raw] [--watch]             List timers; --watch refreshes live (q to quit)
   timer status                           One-line summary of active timers
+  timer clean                            Remove all done timers from current scope
   timer scopes                           List all scopes and their active timer count
+  timer version                          Print version
   timer help                             Show this help
 
 SPEC EXAMPLES

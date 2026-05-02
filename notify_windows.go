@@ -3,26 +3,27 @@
 package main
 
 import (
-	"fmt"
+	"os"
 	"os/exec"
-	"strings"
 	"syscall"
 )
 
 func showToast(message string) {
-	safe := strings.ReplaceAll(message, "'", "''")
-	ps := fmt.Sprintf(`
+	// Message is delivered via environment variable so it never enters the
+	// PowerShell command string — prevents injection through crafted timer names.
+	const ps = `
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType=WindowsRuntime] | Out-Null
 $template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(
     [Windows.UI.Notifications.ToastTemplateType]::ToastText01)
-$template.GetElementsByTagName('text')[0].AppendChild($template.CreateTextNode('%s')) | Out-Null
+$template.GetElementsByTagName('text')[0].AppendChild(
+    $template.CreateTextNode($env:ONIX_TOAST_MSG)) | Out-Null
 $toast = [Windows.UI.Notifications.ToastNotification]::new($template)
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('onix-timer').Show($toast)
-`, safe)
-
+`
 	cmd := exec.Command("powershell.exe",
 		"-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", ps)
+	cmd.Env = append(os.Environ(), "ONIX_TOAST_MSG="+message)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {
 		// Fallback: msg.exe dialog (always present on Windows)
