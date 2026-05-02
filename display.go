@@ -68,7 +68,11 @@ func formatTable(entries []TimerEntry, cfg *TimerConfig) string {
 	for i, e := range entries {
 		status := statusLabel(&e)
 		if e.IsRepeating() {
-			status += " ↻"
+			if e.RepeatTimes > 0 {
+				status += fmt.Sprintf(" ↻ %d/%d", e.RepeatFired, e.RepeatTimes)
+			} else {
+				status += " ↻"
+			}
 		}
 		rows[i] = tableRow{
 			id:        e.ID,
@@ -127,9 +131,18 @@ func padRight(s string, n int) string {
 }
 
 func runWatch(onixHome, scope string, vis *Config) error {
+	quit := make(chan struct{})
+	go listenForQuit(quit)
+
 	firstPrint := true
 	var lastLines int
 	for {
+		select {
+		case <-quit:
+			return nil
+		default:
+		}
+
 		s, err := loadState(onixHome, scope)
 		if err != nil {
 			return err
@@ -139,14 +152,15 @@ func runWatch(onixHome, scope string, vis *Config) error {
 		if table == "" {
 			table = "No active timers.\n"
 		}
+		output := table + "  press q to quit\n"
 
 		if !firstPrint && lastLines > 0 {
 			fmt.Printf("\033[%dA", lastLines)
 		}
 		firstPrint = false
 
-		fmt.Print(table)
-		lastLines = strings.Count(table, "\n")
+		fmt.Print(output)
+		lastLines = strings.Count(output, "\n")
 
 		time.Sleep(time.Second)
 	}

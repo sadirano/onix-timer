@@ -31,6 +31,9 @@ type TimerEntry struct {
 	RawInput       string     `json:"raw_input"`
 	NotifyDisabled bool       `json:"notify_disabled,omitempty"`
 	Done           bool       `json:"done"`
+	RepeatTimes    int64      `json:"repeat_times,omitempty"`  // max fires; 0 = unlimited
+	RepeatFired    int64      `json:"repeat_fired,omitempty"`  // fires completed so far
+	RepeatUntil    *time.Time `json:"repeat_until,omitempty"`  // stop scheduling after this time
 }
 
 type LapEntry struct {

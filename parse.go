@@ -18,6 +18,8 @@ type ParsedTimer struct {
 	Name           string        // user-supplied name
 	RawInput       string        // preserved for recents
 	NotifyOverride *bool         // nil = use config default; true/false = per-timer override
+	RepeatTimes    int64         // 0 = unlimited; set by --times
+	RepeatUntil    *time.Time    // set by --until
 }
 
 var (
@@ -77,6 +79,26 @@ func ParseFlags(args []string) (positional []string, pt ParsedTimer, err error) 
 		case "--no-notify":
 			b := false
 			pt.NotifyOverride = &b
+		case "--times":
+			i++
+			if i >= len(args) {
+				return nil, pt, fmt.Errorf("--times requires a count")
+			}
+			n, e := strconv.ParseInt(args[i], 10, 64)
+			if e != nil || n < 1 {
+				return nil, pt, fmt.Errorf("--times: must be a positive integer")
+			}
+			pt.RepeatTimes = n
+		case "--until":
+			i++
+			if i >= len(args) {
+				return nil, pt, fmt.Errorf("--until requires a time")
+			}
+			t, e := ParseWallTime(args[i])
+			if e != nil {
+				return nil, pt, fmt.Errorf("--until: %w", e)
+			}
+			pt.RepeatUntil = &t
 		default:
 			positional = append(positional, args[i])
 		}

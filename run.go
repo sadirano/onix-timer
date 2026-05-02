@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -102,6 +103,8 @@ func runStart(args []string, onixHome, scope string, vis *Config) error {
 		OnDone:         pt.OnDone,
 		RawInput:       pt.RawInput,
 		NotifyDisabled: notifyDisabled,
+		RepeatTimes:    pt.RepeatTimes,
+		RepeatUntil:    pt.RepeatUntil,
 	}
 
 	// Always set NextFireAt so the daemon knows when to fire.
@@ -142,7 +145,14 @@ func runStart(args []string, onixHome, scope string, vis *Config) error {
 	case "stopwatch":
 		fmt.Printf("Started stopwatch: %s  [id=%s]\n", entry.Name, id)
 	case "repeat":
-		fmt.Printf("Started: %s  [every %s]  [id=%s]\n", entry.Name, FormatDurationHuman(pt.RepeatEvery), id)
+		bounds := ""
+		if entry.RepeatTimes > 0 {
+			bounds += fmt.Sprintf(", %d×", entry.RepeatTimes)
+		}
+		if entry.RepeatUntil != nil {
+			bounds += fmt.Sprintf(", until %s", entry.RepeatUntil.Format("15:04"))
+		}
+		fmt.Printf("Started: %s  [every %s%s]  [id=%s]\n", entry.Name, FormatDurationHuman(pt.RepeatEvery), bounds, id)
 	default:
 		fmt.Printf("Started: %s  [%s]  [id=%s]\n", entry.Name, formatDuration(displaySecs, entry.Kind, vis.Timer.RawSeconds), id)
 	}
@@ -326,6 +336,32 @@ func runLS(onixHome, scope string, vis *Config, raw, watch bool) error {
 	}
 
 	fmt.Print(formatTable(active, &vis.Timer))
+	return nil
+}
+
+func runScopes(onixHome string) error {
+	files, _ := filepath.Glob(filepath.Join(timerDir(onixHome), "*.json"))
+	if len(files) == 0 {
+		fmt.Println("No scopes found.")
+		return nil
+	}
+	const col = 20
+	fmt.Printf("%-*s  %s\n", col, "SCOPE", "ACTIVE")
+	fmt.Printf("%-*s  %s\n", col, strings.Repeat("─", col), "──────")
+	for _, f := range files {
+		scope := strings.TrimSuffix(filepath.Base(f), ".json")
+		s, err := loadState(onixHome, scope)
+		if err != nil {
+			continue
+		}
+		count := 0
+		for _, e := range s.Timers {
+			if !e.Done {
+				count++
+			}
+		}
+		fmt.Printf("%-*s  %d\n", col, scope, count)
+	}
 	return nil
 }
 

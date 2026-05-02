@@ -119,9 +119,17 @@ func processScope(onixHome, scope string) bool {
 		runOnDone(e.OnDone)
 
 		if e.IsRepeating() {
+			e.RepeatFired++
 			next := now.Add(time.Duration(e.RepeatEveryS) * time.Second)
-			e.NextFireAt = &next
-			hasActive = true
+			bounded := (e.RepeatTimes > 0 && e.RepeatFired >= e.RepeatTimes) ||
+				(e.RepeatUntil != nil && next.After(*e.RepeatUntil))
+			if bounded {
+				e.Done = true
+				e.NextFireAt = nil
+			} else {
+				e.NextFireAt = &next
+				hasActive = true
+			}
 		} else {
 			e.Done = true
 			e.NextFireAt = nil

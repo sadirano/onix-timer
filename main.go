@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -12,7 +13,15 @@ func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		scope, _ := resolveScope(nil)
+		scope, _, hasContext := resolveScope(nil)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
+		s, _ := loadState(onixHome, scope)
+		if len(filterActive(s.Timers)) == 0 {
+			printHelp()
+			return
+		}
 		if err := runLS(onixHome, scope, &vis, false, false); err != nil {
 			fatal("%v", err)
 		}
@@ -34,47 +43,75 @@ func main() {
 
 	switch subcmd {
 	case "start":
-		scope, cleaned := resolveScope(rest)
+		scope, cleaned, hasContext := resolveScope(rest)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		if err := runStart(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "stop":
-		scope, cleaned := resolveScope(rest)
+		scope, cleaned, hasContext := resolveScope(rest)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		if err := runStop(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "cancel", "rm", "delete":
-		scope, cleaned := resolveScope(rest)
+		scope, cleaned, hasContext := resolveScope(rest)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		if err := runCancel(cleaned, onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "reset":
-		scope, cleaned := resolveScope(rest)
+		scope, cleaned, hasContext := resolveScope(rest)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		if err := runReset(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "lap":
-		scope, cleaned := resolveScope(rest)
+		scope, cleaned, hasContext := resolveScope(rest)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		if err := runLap(cleaned, onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "status":
-		scope, _ := resolveScope(rest)
+		scope, _, hasContext := resolveScope(rest)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		if err := runStatus(onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "ls", "list":
-		scope, cleaned := resolveScope(rest)
+		scope, cleaned, hasContext := resolveScope(rest)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		raw := hasFlag(cleaned, "--raw")
 		watch := hasFlag(cleaned, "--watch")
 		if err := runLS(onixHome, scope, &vis, raw, watch); err != nil {
+			fatal("%v", err)
+		}
+	case "scopes":
+		if err := runScopes(onixHome); err != nil {
 			fatal("%v", err)
 		}
 	case "help", "-h", "--help":
 		printHelp()
 	default:
 		// Implicit start: treat all args as start spec
-		scope, cleaned := resolveScope(args)
+		scope, cleaned, hasContext := resolveScope(args)
+		if !hasContext {
+			scope = promptScopeIfNeeded(onixHome, scope)
+		}
 		if err := runStart(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
@@ -82,9 +119,10 @@ func main() {
 }
 
 // resolveScope extracts the timer scope from env vars and/or --global/-g flag.
-// It returns the scope slug and a cleaned args slice with the flag removed.
+// hasContext is true when any explicit context was found; false means the "global"
+// default was used with no user intent — callers may then prompt for a scope.
 // Priority: --global/-g flag > ONIX_TARGET env > ONIX_ALIAS env > "global"
-func resolveScope(args []string) (scope string, remaining []string) {
+func resolveScope(args []string) (scope string, remaining []string, hasContext bool) {
 	target := strings.TrimSpace(os.Getenv("ONIX_TARGET"))
 	alias := strings.TrimSpace(os.Getenv("ONIX_ALIAS"))
 
@@ -99,15 +137,44 @@ func resolveScope(args []string) (scope string, remaining []string) {
 	}
 
 	if global {
-		return "global", remaining
+		return "global", remaining, true
 	}
 	if target != "" {
-		return sanitizeScope(target), remaining
+		return sanitizeScope(target), remaining, true
 	}
 	if alias != "" {
-		return sanitizeScope(alias), remaining
+		return sanitizeScope(alias), remaining, true
 	}
-	return "global", remaining
+	return "global", remaining, false
+}
+
+// promptScopeIfNeeded shows a scope picker when stdin is interactive and more
+// than one scope exists. Returns current unchanged when there is nothing to pick.
+func promptScopeIfNeeded(onixHome, current string) string {
+	if !isTerminal() {
+		return current
+	}
+	files, _ := filepath.Glob(filepath.Join(timerDir(onixHome), "*.json"))
+	var others []string
+	for _, f := range files {
+		name := strings.TrimSuffix(filepath.Base(f), ".json")
+		if name != "global" {
+			others = append(others, name)
+		}
+	}
+	if len(others) == 0 {
+		return current
+	}
+	all := append(others, "global")
+	fmt.Printf("No scope set. Available: %s\n", strings.Join(all, ", "))
+	fmt.Printf("Scope (default: global): ")
+	var input string
+	fmt.Scanln(&input)
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return "global"
+	}
+	return sanitizeScope(input)
 }
 
 // sanitizeScope converts an arbitrary string into a safe filename slug.
@@ -147,14 +214,17 @@ func printHelp() {
 USAGE
   timer [start] <spec>                   Start a countdown (implicit start)
   timer start --stopwatch [name]         Count-up stopwatch
-  timer start --every <dur> [name]       Repeat on interval (infinite)
-  timer start --at <time> [--every <d>]  Delayed start, optionally repeating
+  timer start --every <dur> [name]                    Repeat on interval (infinite)
+  timer start --every <dur> --times <n> [name]        Repeat exactly N times
+  timer start --every <dur> --until <time> [name]     Repeat until wall-clock time
+  timer start --at <time> [--every <d>]               Delayed start, optionally repeating
   timer stop <id|name>                   Pause / resume timer
   timer cancel <id|name>                 Delete timer
   timer reset <id|name>                  Restart from original duration
   timer lap <id|name>                    Record split on stopwatch
-  timer ls [--raw] [--watch]             List timers; --watch refreshes live
+  timer ls [--raw] [--watch]             List timers; --watch refreshes live (q to quit)
   timer status                           One-line summary of active timers
+  timer scopes                           List all scopes and their active timer count
   timer help                             Show this help
 
 SPEC EXAMPLES
@@ -175,6 +245,8 @@ FLAGS (with start)
   --every <dur>       Repeat on this interval
   --at <time>         Delay start (HH:MM or 3pm format)
   --exec <cmd>        Run shell command on each expiry
+  --times <n>         Fire repeat timer exactly N times then stop
+  --until <time>      Stop repeat timer after this wall-clock time
   --notify            Force notifications on (overrides config)
   --no-notify         Disable notifications for this timer
   --global, -g        Use global timer scope (ignore project context)

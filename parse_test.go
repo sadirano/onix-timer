@@ -269,6 +269,39 @@ func TestParseFlagsNotifyOverride(t *testing.T) {
 	}
 }
 
+func TestParseFlagsTimes(t *testing.T) {
+	_, pt, err := ParseFlags([]string{"--times", "5", "every", "30m"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pt.RepeatTimes != 5 {
+		t.Fatalf("want RepeatTimes=5, got %d", pt.RepeatTimes)
+	}
+
+	_, _, err = ParseFlags([]string{"--times", "0"})
+	if err == nil {
+		t.Fatal("expected error for --times 0")
+	}
+
+	_, _, err = ParseFlags([]string{"--times", "abc"})
+	if err == nil {
+		t.Fatal("expected error for --times abc")
+	}
+}
+
+func TestParseFlagsUntil(t *testing.T) {
+	_, pt, err := ParseFlags([]string{"--until", "23:59"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pt.RepeatUntil == nil {
+		t.Fatal("RepeatUntil should be set")
+	}
+	if pt.RepeatUntil.Hour() != 23 || pt.RepeatUntil.Minute() != 59 {
+		t.Fatalf("unexpected RepeatUntil: %v", pt.RepeatUntil)
+	}
+}
+
 func TestFormatDurationHuman(t *testing.T) {
 	cases := []struct {
 		d    time.Duration
