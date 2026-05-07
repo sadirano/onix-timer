@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/sadirano/onix-timer/internal/timer"
 )
 
 type Config struct {
@@ -44,7 +46,7 @@ func LoadConfig(onixHome string) Config {
 		}
 		onixHome = filepath.Join(home, ".onix")
 	}
-	p := filepath.Join(timerDir(onixHome), "config.toml")
+	p := filepath.Join(timer.TimerDir(onixHome), "config.toml")
 	// Graceful fallback: missing or malformed config → use defaults
 	if _, err := toml.DecodeFile(p, &cfg); err != nil {
 		return defaultConfig()
