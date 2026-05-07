@@ -1,0 +1,35 @@
+[[entry]]
+name = "start"
+cmd = "t-start"
+
+[[entry]]
+name = "stop"
+cmd = "t-stop"
+
+[[entry]]
+name = "cancel"
+cmd = "t-cancel"
+
+[[entry]]
+name = "reset"
+cmd = "t-reset"
+
+[[entry]]
+name = "lap"
+cmd = "t-lap"
+
+[[entry]]
+name = "status"
+cmd = "t-status"
+
+[[entry]]
+name = "ls"
+cmd = "t-ls"
+
+[[entry]]
+name = "clean"
+cmd = "t-clean"
+
+[[entry]]
+name = "scopes"
+cmd = "t-scopes"
