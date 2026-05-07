@@ -5,33 +5,42 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/sadirano/onix-timer/internal/config"
+	"github.com/sadirano/onix-timer/internal/timer"
 )
 
 const version = "0.1.0"
 
 func main() {
 	onixHome := strings.TrimSpace(os.Getenv("ONIX_HOME"))
-	vis := loadConfig(onixHome)
+	vis := config.LoadConfig(onixHome)
 	args := os.Args[1:]
 
-	if len(args) == 0 {
+	if len(args) == 0 && os.Getenv("ONIX_ENTRY") == "" {
 		scope, _, hasContext := resolveScope(nil)
 		if !hasContext {
 			scope = promptScopeIfNeeded(onixHome, scope)
 		}
-		s, _ := loadState(onixHome, scope)
-		if len(filterActive(s.Timers)) == 0 {
-			printHelp()
-			return
-		}
-		if err := runLS(onixHome, scope, &vis, false, false); err != nil {
+		if err := timer.RunLS(onixHome, scope, &vis, false, false); err != nil {
 			fatal("%v", err)
 		}
 		return
 	}
 
-	subcmd := strings.ToLower(strings.TrimSpace(args[0]))
-	rest := args[1:]
+	entry := strings.ToLower(strings.TrimSpace(os.Getenv("ONIX_ENTRY")))
+	subcmd := ""
+	rest := args
+
+	if entry != "" {
+		subcmd = entry
+		if len(args) > 0 && strings.EqualFold(args[0], entry) {
+			rest = args[1:]
+		}
+	} else if len(args) > 0 {
+		subcmd = strings.ToLower(strings.TrimSpace(args[0]))
+		rest = args[1:]
+	}
 
 	// daemon is an internal subcommand invoked by ensureDaemon; it receives onixHome as rest[0].
 	if subcmd == "daemon" {
@@ -39,7 +48,7 @@ func main() {
 		if len(rest) > 0 && strings.TrimSpace(rest[0]) != "" {
 			effectiveHome = strings.TrimSpace(rest[0])
 		}
-		runDaemon(effectiveHome)
+		timer.RunDaemon(effectiveHome)
 		return
 	}
 
@@ -49,48 +58,48 @@ func main() {
 		if !hasContext {
 			scope = promptScopeIfNeeded(onixHome, scope)
 		}
-		if err := runStart(cleaned, onixHome, scope, &vis); err != nil {
+		if err := timer.RunStart(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "stop":
 		scope, cleaned, _ := resolveScope(rest)
-		if err := runStop(cleaned, onixHome, scope, &vis); err != nil {
+		if err := timer.RunStop(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "cancel", "rm", "delete":
 		scope, cleaned, _ := resolveScope(rest)
-		if err := runCancel(cleaned, onixHome, scope); err != nil {
+		if err := timer.RunCancel(cleaned, onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "reset":
 		scope, cleaned, _ := resolveScope(rest)
-		if err := runReset(cleaned, onixHome, scope, &vis); err != nil {
+		if err := timer.RunReset(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "lap":
 		scope, cleaned, _ := resolveScope(rest)
-		if err := runLap(cleaned, onixHome, scope); err != nil {
+		if err := timer.RunLap(cleaned, onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "status":
 		scope, _, _ := resolveScope(rest)
-		if err := runStatus(onixHome, scope, &vis); err != nil {
+		if err := timer.RunStatus(onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	case "ls", "list":
 		scope, cleaned, _ := resolveScope(rest)
 		raw := hasFlag(cleaned, "--raw")
 		watch := hasFlag(cleaned, "--watch")
-		if err := runLS(onixHome, scope, &vis, raw, watch); err != nil {
+		if err := timer.RunLS(onixHome, scope, &vis, raw, watch); err != nil {
 			fatal("%v", err)
 		}
 	case "clean":
 		scope, _, _ := resolveScope(rest)
-		if err := runClean(onixHome, scope); err != nil {
+		if err := timer.RunClean(onixHome, scope); err != nil {
 			fatal("%v", err)
 		}
 	case "scopes":
-		if err := runScopes(onixHome); err != nil {
+		if err := timer.RunScopes(onixHome); err != nil {
 			fatal("%v", err)
 		}
 	case "version", "-v", "--version":
@@ -103,7 +112,7 @@ func main() {
 		if !hasContext {
 			scope = promptScopeIfNeeded(onixHome, scope)
 		}
-		if err := runStart(cleaned, onixHome, scope, &vis); err != nil {
+		if err := timer.RunStart(cleaned, onixHome, scope, &vis); err != nil {
 			fatal("%v", err)
 		}
 	}
@@ -142,10 +151,10 @@ func resolveScope(args []string) (scope string, remaining []string, hasContext b
 // promptScopeIfNeeded shows a scope picker when stdin is interactive and more
 // than one scope exists. Returns current unchanged when there is nothing to pick.
 func promptScopeIfNeeded(onixHome, current string) string {
-	if !isTerminal() {
+	if !timer.IsTerminal() {
 		return current
 	}
-	files, _ := filepath.Glob(filepath.Join(timerDir(onixHome), "*.json"))
+	files, _ := filepath.Glob(filepath.Join(timer.TimerDir(onixHome), "*.json"))
 	var others []string
 	for _, f := range files {
 		name := strings.TrimSuffix(filepath.Base(f), ".json")
