@@ -1,4 +1,4 @@
-package main
+package timer
 
 import (
 	"fmt"
@@ -184,3 +184,5 @@ func TestFilterActive(t *testing.T) {
 		t.Fatal("expected t1 and t3 in active list")
 	}
 }
+
+

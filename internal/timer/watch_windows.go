@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package timer
 
 import (
 	"os"
@@ -47,7 +47,9 @@ func listenForQuit(quit chan<- struct{}) {
 }
 
 // isTerminal reports whether stdin is an interactive console.
-func isTerminal() bool {
+func IsTerminal() bool {
 	_, ok := consoleMode(uintptr(syscall.Handle(os.Stdin.Fd())))
 	return ok
 }
+
+

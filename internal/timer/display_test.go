@@ -1,6 +1,7 @@
-package main
+package timer
 
 import (
+	"github.com/sadirano/onix-timer/internal/config"
 	"strings"
 	"testing"
 	"time"
@@ -86,7 +87,7 @@ func TestFormatTable(t *testing.T) {
 			RemainingS: 300,
 		},
 	}
-	cfg := &TimerConfig{RawSeconds: false}
+	cfg := &Timerconfig.Config{RawSeconds: false}
 	table := formatTable(entries, cfg)
 
 	if !strings.Contains(table, "t1") {
@@ -107,7 +108,7 @@ func TestFormatTable(t *testing.T) {
 }
 
 func TestFormatTableEmpty(t *testing.T) {
-	if got := formatTable(nil, &TimerConfig{}); got != "" {
+	if got := formatTable(nil, &Timerconfig.Config{}); got != "" {
 		t.Errorf("empty table should be empty string, got %q", got)
 	}
 }
@@ -120,3 +121,5 @@ func TestPadRight(t *testing.T) {
 		t.Error("longer string should not be truncated")
 	}
 }
+
+

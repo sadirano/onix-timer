@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"os"
@@ -35,7 +35,7 @@ func defaultConfig() Config {
 	}
 }
 
-func loadConfig(onixHome string) Config {
+func LoadConfig(onixHome string) Config {
 	cfg := defaultConfig()
 	if onixHome == "" {
 		home, err := os.UserHomeDir()
@@ -58,3 +58,4 @@ func applyDefaults(cfg Config) Config {
 	}
 	return cfg
 }
+

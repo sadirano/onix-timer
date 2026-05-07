@@ -1,4 +1,4 @@
-package main
+package timer
 
 import (
 	"testing"
@@ -320,3 +320,5 @@ func TestFormatDurationHuman(t *testing.T) {
 		}
 	}
 }
+
+

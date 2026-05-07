@@ -1,4 +1,4 @@
-package main
+package timer
 
 import (
 	"os"
@@ -33,7 +33,7 @@ func ensureDaemon(onixHome string) {
 
 // runDaemon is the entry point for the background daemon process.
 // It polls all scope state files every second and fires notifications when timers expire.
-func runDaemon(onixHome string) {
+func RunDaemon(onixHome string) {
 	pidPath := daemonPIDPath(onixHome)
 
 	// Exit immediately if another daemon is already alive.
@@ -142,3 +142,5 @@ func processScope(onixHome, scope string) bool {
 	}
 	return hasActive
 }
+
+

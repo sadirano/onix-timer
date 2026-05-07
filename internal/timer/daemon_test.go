@@ -1,4 +1,4 @@
-package main
+package timer
 
 import (
 	"testing"
@@ -251,3 +251,5 @@ func TestProcessScopeAlreadyDoneIgnored(t *testing.T) {
 		t.Fatal("Done timer should not have RepeatFired incremented")
 	}
 }
+
+

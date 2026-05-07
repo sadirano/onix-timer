@@ -1,4 +1,4 @@
-package main
+package timer
 
 import (
 	"encoding/json"
@@ -79,7 +79,7 @@ func (e *TimerEntry) ComputeElapsed() int64 {
 }
 
 // timerDir returns ~/.onix/timer/ — the folder for all timer state and config files.
-func timerDir(onixHome string) string {
+func TimerDir(onixHome string) string {
 	if onixHome == "" {
 		home, _ := os.UserHomeDir()
 		onixHome = filepath.Join(home, ".onix")
@@ -198,3 +198,5 @@ func filterActive(timers []TimerEntry) []TimerEntry {
 	}
 	return out
 }
+
+

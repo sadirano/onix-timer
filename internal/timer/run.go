@@ -1,13 +1,14 @@
-package main
+package timer
 
 import (
+	"github.com/sadirano/onix-timer/internal/config"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-func runStart(args []string, onixHome, scope string, vis *Config) error {
+func RunStart(args []string, onixHome, scope string, vis *config.Config) error {
 	positional, pt, err := ParseFlags(args)
 	if err != nil {
 		return err
@@ -159,7 +160,7 @@ func runStart(args []string, onixHome, scope string, vis *Config) error {
 	return nil
 }
 
-func runStop(args []string, onixHome, scope string, vis *Config) error {
+func RunStop(args []string, onixHome, scope string, vis *config.Config) error {
 	ref, err := resolveRef(args, "stop")
 	if err != nil {
 		return err
@@ -207,7 +208,7 @@ func runStop(args []string, onixHome, scope string, vis *Config) error {
 	return nil
 }
 
-func runCancel(args []string, onixHome, scope string) error {
+func RunCancel(args []string, onixHome, scope string) error {
 	ref, err := resolveRef(args, "cancel")
 	if err != nil {
 		return err
@@ -226,7 +227,7 @@ func runCancel(args []string, onixHome, scope string) error {
 	return saveState(onixHome, scope, s)
 }
 
-func runReset(args []string, onixHome, scope string, vis *Config) error {
+func RunReset(args []string, onixHome, scope string, vis *config.Config) error {
 	ref, err := resolveRef(args, "reset")
 	if err != nil {
 		return err
@@ -263,7 +264,7 @@ func runReset(args []string, onixHome, scope string, vis *Config) error {
 	return nil
 }
 
-func runLap(args []string, onixHome, scope string) error {
+func RunLap(args []string, onixHome, scope string) error {
 	ref, err := resolveRef(args, "lap")
 	if err != nil {
 		return err
@@ -285,7 +286,7 @@ func runLap(args []string, onixHome, scope string) error {
 	return saveState(onixHome, scope, s)
 }
 
-func runStatus(onixHome, scope string, vis *Config) error {
+func RunStatus(onixHome, scope string, vis *config.Config) error {
 	s, err := loadState(onixHome, scope)
 	if err != nil {
 		return err
@@ -307,7 +308,7 @@ func runStatus(onixHome, scope string, vis *Config) error {
 	return nil
 }
 
-func runLS(onixHome, scope string, vis *Config, raw, watch bool) error {
+func RunLS(onixHome, scope string, vis *config.Config, raw, watch bool) error {
 	s, err := loadState(onixHome, scope)
 	if err != nil {
 		return err
@@ -339,7 +340,7 @@ func runLS(onixHome, scope string, vis *Config, raw, watch bool) error {
 	return nil
 }
 
-func runClean(onixHome, scope string) error {
+func RunClean(onixHome, scope string) error {
 	s, err := loadState(onixHome, scope)
 	if err != nil {
 		return err
@@ -360,7 +361,7 @@ func runClean(onixHome, scope string) error {
 	return nil
 }
 
-func runScopes(onixHome string) error {
+func RunScopes(onixHome string) error {
 	files, _ := filepath.Glob(filepath.Join(timerDir(onixHome), "*.json"))
 	if len(files) == 0 {
 		fmt.Println("No scopes found.")
@@ -398,3 +399,5 @@ func resolveRef(args []string, cmd string) (string, error) {
 	}
 	return strings.Join(positional, " "), nil
 }
+
+

@@ -1,4 +1,4 @@
-package main
+package timer
 
 import (
 	"bytes"
@@ -125,3 +125,5 @@ func TestRunCleanNothingToDo(t *testing.T) {
 		t.Fatal("clean with no done timers should not remove anything")
 	}
 }
+
+

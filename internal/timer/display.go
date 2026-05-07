@@ -1,6 +1,7 @@
-package main
+package timer
 
 import (
+	"github.com/sadirano/onix-timer/internal/config"
 	"fmt"
 	"strings"
 	"time"
@@ -60,7 +61,7 @@ type tableRow struct {
 	id, name, kind, remaining, elapsed, status string
 }
 
-func formatTable(entries []TimerEntry, cfg *TimerConfig) string {
+func formatTable(entries []TimerEntry, cfg *Timerconfig.Config) string {
 	if len(entries) == 0 {
 		return ""
 	}
@@ -130,7 +131,7 @@ func padRight(s string, n int) string {
 	return s + strings.Repeat(" ", n-len(s))
 }
 
-func runWatch(onixHome, scope string, vis *Config) error {
+func runWatch(onixHome, scope string, vis *config.Config) error {
 	quit := make(chan struct{})
 	go listenForQuit(quit)
 
@@ -165,3 +166,5 @@ func runWatch(onixHome, scope string, vis *Config) error {
 		time.Sleep(time.Second)
 	}
 }
+
+

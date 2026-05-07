@@ -1,4 +1,4 @@
-package main
+package timer
 
 import (
 	"fmt"
@@ -315,3 +315,5 @@ func FormatDurationHuman(d time.Duration) string {
 		return fmt.Sprintf("%ds", s)
 	}
 }
+
+

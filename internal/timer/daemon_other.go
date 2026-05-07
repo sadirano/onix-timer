@@ -1,6 +1,6 @@
 //go:build !windows
 
-package main
+package timer
 
 import (
 	"os"
@@ -20,3 +20,5 @@ func spawnDaemon(exe, onixHome string) {
 	cmd := exec.Command(exe, "daemon", onixHome)
 	_ = cmd.Start()
 }
+
+

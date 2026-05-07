@@ -1,6 +1,7 @@
-package main
+package timer
 
 import (
+	"github.com/sadirano/onix-timer/internal/config"
 	"bytes"
 	"fmt"
 	"os/exec"
@@ -32,7 +33,7 @@ func parseFzfExpectOutput(out []byte) (key string, lines []string) {
 }
 
 // fzfSelectTimer shows active timers in fzf. Returns the selected timer ID and key pressed.
-func fzfSelectTimer(entries []TimerEntry, vis *Config) (id, key string, err error) {
+func fzfSelectTimer(entries []TimerEntry, vis *config.Config) (id, key string, err error) {
 	var buf bytes.Buffer
 	for _, e := range entries {
 		rem := formatDuration(e.ComputeRemaining(), e.Kind, false)
@@ -77,7 +78,7 @@ func fzfSelectTimer(entries []TimerEntry, vis *Config) (id, key string, err erro
 }
 
 // fzfSelectRecent shows recent timer specs in fzf and returns the selected entry.
-func fzfSelectRecent(recents []string, vis *Config) (string, error) {
+func fzfSelectRecent(recents []string, vis *config.Config) (string, error) {
 	if !fzfAvailable() {
 		return "", nil
 	}
@@ -102,7 +103,7 @@ func fzfSelectRecent(recents []string, vis *Config) (string, error) {
 }
 
 // runLSWithFZF shows the timer list in fzf and dispatches key-bound actions.
-func runLSWithFZF(entries []TimerEntry, onixHome, scope string, vis *Config, s *State) error {
+func runLSWithFZF(entries []TimerEntry, onixHome, scope string, vis *config.Config, s *State) error {
 	id, key, err := fzfSelectTimer(entries, vis)
 	if err != nil {
 		return err
@@ -128,7 +129,7 @@ func runLSWithFZF(entries []TimerEntry, onixHome, scope string, vis *Config, s *
 	return nil
 }
 
-func printTimerDetail(e *TimerEntry, vis *Config) {
+func printTimerDetail(e *TimerEntry, vis *config.Config) {
 	fmt.Printf("ID:        %s\n", e.ID)
 	fmt.Printf("Name:      %s\n", e.Name)
 	fmt.Printf("Kind:      %s\n", e.Kind)
@@ -151,3 +152,5 @@ func printTimerDetail(e *TimerEntry, vis *Config) {
 		}
 	}
 }
+
+

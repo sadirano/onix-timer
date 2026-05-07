@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package timer
 
 import (
 	"os"
@@ -44,3 +44,5 @@ func runOnDone(command string) {
 	}
 	_ = cmd.Start()
 }
+
+

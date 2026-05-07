@@ -1,6 +1,8 @@
 //go:build !windows
 
-package main
+package timer
 
 func showToast(_ string)  {}
 func runOnDone(_ string) {}
+
+

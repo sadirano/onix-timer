@@ -1,6 +1,6 @@
 //go:build !windows
 
-package main
+package timer
 
 import "os"
 
@@ -18,4 +18,6 @@ func listenForQuit(quit chan<- struct{}) {
 	}
 }
 
-func isTerminal() bool { return false }
+func IsTerminal() bool { return false }
+
+

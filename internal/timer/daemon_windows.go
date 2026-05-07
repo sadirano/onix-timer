@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package timer
 
 import (
 	"os/exec"
@@ -34,3 +34,5 @@ func spawnDaemon(exe, onixHome string) {
 	}
 	_ = cmd.Start()
 }
+
+
